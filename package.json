@@ -1,0 +1,27 @@
+{
+  "name": "intercon2",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "debug": "^2.2.0",
+    "lodash": "^3.10.1",
+    "object-deep": "^0.1.1",
+    "objectid": "^3.2.1",
+    "q": "^1.4.1",
+    "require-dir": "^0.3.0"
+  },
+  "devDependencies": {
+    "chai": "^3.3.0",
+    "co-mocha": "^1.1.2",
+    "mocha": "^2.3.3"
+  }
+}
