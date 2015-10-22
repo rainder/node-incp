@@ -13,6 +13,11 @@ module.exports = IC;
 
 util.inherits(IC, events.EventEmitter);
 
+/**
+ *
+ * @param options
+ * @constructor
+ */
 function IC(options) {
   this.options = options;
   this.manager = new Manager(options);
@@ -20,19 +25,6 @@ function IC(options) {
 
   utils.pipeEvent('established', this.manager, this);
   utils.pipeEvent('message', this.manager, this);
-
-  //this.manager.on('established', (info, socket) => {
-  //  let node = new Node(info, socket);
-  //  this.nodes.add(node);
-  //
-  //  let collection = this.nodesByType.get(node.getType());
-  //  if (!collection) {
-  //    collection = new Set();
-  //    this.nodesByType.set(info.type, collection);
-  //  }
-  //
-  //  collection.push(node);
-  //});
 }
 
 /**

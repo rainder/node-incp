@@ -56,7 +56,7 @@ describe('Server', function () {
     let node = instances[0].getRandomNodeByType('poi');
 
     let r = yield node.sendRequest({
-      poi: 123
+      poi: Array.from(new Array(1e6)).join('-')
     });
 
     r.data.should.equals(true);
