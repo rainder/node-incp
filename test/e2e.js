@@ -12,9 +12,10 @@ const utils = require('app/utils');
 chai.should();
 
 describe('Server', function () {
-  let instances = [];
+  this.timeout(10000);
 
   it('should create three instances', function *() {
+    let instances = [];
     let nodes = [
       [],
       ['127.0.0.1:9401'],
@@ -68,5 +69,52 @@ describe('Server', function () {
     //};
     //
     //console.log(num);
+  });
+
+  it('should create two instances 2', function *() {
+    let instances = [];
+    let promises = [];
+    let nodes = [
+      ['127.0.0.1:9501'],
+      ['127.0.0.1:9500']
+    ];
+
+    for (let i = 0; i < 2; i++) {
+      let dfd = q.defer();
+      promises.push(dfd.promise);
+      let instance = new IC({
+        name: `test${i}`,
+        type: 'poi',
+        host: '127.0.0.1',
+        port: 9500 + i
+      });
+
+      instance.on('established', function (node) {
+        console.error('!!!!!!!!!');
+        dfd.resolve();
+      });
+
+      instance.on('message', function (json, socket) {
+        console.log(json, !!socket);
+      });
+
+      yield instance.startServer();
+      instances[instances.length] = instance;
+    }
+
+    for (let instance of instances) {
+      for (let node of nodes[instances.indexOf(instance)]) {
+        let address = utils.parseAddress(node);
+        yield instance.connect(address);
+      }
+    }
+
+    yield promises;
+
+    for (let instance of instances) {
+      for (let node of instance.manager.mapById.values()) {
+        console.log(node.getInfo());
+      }
+    }
   });
 });

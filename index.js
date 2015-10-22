@@ -58,7 +58,7 @@ IC.prototype.connect = function *(address) {
 IC.prototype.broadcast = function (data) {
   let promises = [];
 
-  for (let node of this.manager.map.values()) {
+  for (let node of this.manager.mapById.values()) {
     promises[promises.length] = node.sendPush(data);
   }
 
@@ -81,7 +81,7 @@ IC.prototype.getRandomNodeByType = function (type) {
 };
 
 IC.prototype.getNodeById = function (id) {
-  return this.manager.map.get(id);
+  return this.manager.mapById.get(id);
 };
 
 /**
