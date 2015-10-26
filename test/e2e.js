@@ -90,7 +90,6 @@ describe('Server', function () {
       });
 
       instance.on('established', function (node) {
-        console.error('!!!!!!!!!');
         dfd.resolve();
       });
 
@@ -116,5 +115,16 @@ describe('Server', function () {
         console.log(node.getInfo());
       }
     }
+
+    let numberOfConnections = yield instances.map(function *(item) {
+      let status = yield item.status();
+      return status.number_of_server_connections;
+    });
+
+    let sum = numberOfConnections.reduce(function (a, b) {
+      return a + b;
+    });
+
+    sum.should.equal(1);
   });
 });
