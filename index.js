@@ -3,11 +3,13 @@
 const _ = require('lodash');
 const util = require('util');
 const events = require('events');
+const os = require('os');
 
 const Manager = require('./lib/manager');
 const utils = require('./lib/utils');
 const Node = require('app/node');
 const callbacks = require('app/callbacks');
+const dataHandler = require('app/data-handler');
 
 module.exports = IC;
 
@@ -25,6 +27,7 @@ function IC(options) {
 
   utils.pipeEvent('established', this.manager, this);
   utils.pipeEvent('message', this.manager, this);
+  utils.pipeEvent('error', this.manager, this);
 }
 
 /**
@@ -93,4 +96,26 @@ IC.prototype.shutdown = function *() {
 
 IC.prototype.getId = function () {
   return this.manager.id;
+};
+
+IC.prototype.status = function *() {
+  let numberOfServerConnections = yield (cb) => {
+    this.manager.server.server.getConnections(cb);
+  };
+
+  let result = {
+    id: utils.toPublicId(this.options),
+    h: os.hostname(),
+    l: os.loadavg(),
+    pid: process.pid,
+    nodes: [],
+    number_of_server_connections: numberOfServerConnections
+  };
+
+  for (let node of this.manager.mapById.values()) {
+    let response = yield dataHandler.req(node.getSocket(), 'status', {});
+    result.nodes.push(response);
+  }
+
+  return result;
 };
