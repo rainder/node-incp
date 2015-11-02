@@ -1,6 +1,6 @@
 {
   "name": "intercon",
-  "version": "0.1.14",
+  "version": "0.1.15",
   "description": "",
   "main": "index.js",
   "directories": {
@@ -13,6 +13,7 @@
   "author": "Andrius Skerla",
   "license": "ISC",
   "dependencies": {
+    "co": "^4.6.0",
     "debug": "^2.2.0",
     "lodash": "^3.10.1",
     "object-deep": "^0.1.1",
