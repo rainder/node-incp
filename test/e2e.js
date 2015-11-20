@@ -7,7 +7,7 @@ const q = require('q');
 const net = require('net');
 
 const IC = require('./..');
-const utils = require('app/utils');
+const utils = require('./../lib/utils');
 
 chai.should();
 

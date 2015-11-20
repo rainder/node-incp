@@ -7,9 +7,9 @@ const os = require('os');
 
 const Manager = require('./lib/manager');
 const utils = require('./lib/utils');
-const Node = require('app/node');
-const callbacks = require('app/callbacks');
-const dataHandler = require('app/data-handler');
+const Node = require('./lib/node');
+const callbacks = require('./lib/callbacks');
+const dataHandler = require('./lib/data-handler');
 
 module.exports = IC;
 
