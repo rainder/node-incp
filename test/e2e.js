@@ -11,7 +11,7 @@ const utils = require('./../lib/utils');
 
 chai.should();
 
-describe('Server', function () {
+describe('e2e', function () {
   this.timeout(10000);
 
   it('should create three instances', function *() {
@@ -115,6 +115,8 @@ describe('Server', function () {
         console.log(node.getInfo());
       }
     }
+
+    yield (cb) => setTimeout(cb, 100);
 
     let numberOfConnections = yield instances.map(function *(item) {
       let status = yield item.status();

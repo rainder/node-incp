@@ -11,7 +11,7 @@ const dataHandler = require('./../lib/data-handler');
 
 chai.should();
 
-describe('Server', function () {
+describe('Server 2', function () {
   let server;
   let socket;
   let memory = {};

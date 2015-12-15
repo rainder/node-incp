@@ -1,6 +1,6 @@
 {
   "name": "intercon",
-  "version": "0.1.18",
+  "version": "0.1.19",
   "description": "",
   "main": "index.js",
   "directories": {
@@ -13,6 +13,7 @@
   "license": "ISC",
   "dependencies": {
     "co": "^4.6.0",
+    "co-try-catch": "^0.1.2",
     "debug": "^2.2.0",
     "lodash": "^3.10.1",
     "object-deep": "^0.1.1",
