@@ -42,7 +42,7 @@ IC.prototype.startServer = function *() {
  * @param address
  */
 IC.prototype.connect = function *(address) {
-  yield this.manager.connect(address);
+  return yield this.manager.connect(address);
 };
 
 /**
@@ -62,6 +62,26 @@ IC.prototype.broadcast = function (data) {
 
 /**
  *
+ */
+IC.prototype.ensureConnected = function *() {
+  let prevPromises = [];
+
+  while (true) {
+    let promises = Array.from(this.manager.mapById.values()).map(function (node) {
+      return node.duplexDFD.promise;
+    });
+
+    if (promises.length === prevPromises.length) {
+      break;
+    }
+
+    yield promises;
+    prevPromises = promises;
+  }
+};
+
+/**
+ *
  * @param type
  * @returns {*}
  */
@@ -75,6 +95,11 @@ IC.prototype.getRandomNodeByType = function (type) {
   return collection[index];
 };
 
+/**
+ *
+ * @param id
+ * @returns {V}
+ */
 IC.prototype.getNodeById = function (id) {
   return this.manager.mapById.get(id);
 };
@@ -87,7 +112,9 @@ IC.prototype.getNodeById = function (id) {
  * @returns {boolean}
  */
 IC.prototype.respond = function (id, success, data) {
-  return callbacks.execute(id, success, data);
+  let executed = callbacks.execute(id, success, data);
+  //console.error('RESPOND', id, success, executed, data);
+  return executed;
 };
 
 IC.prototype.shutdown = function *() {
@@ -95,27 +122,5 @@ IC.prototype.shutdown = function *() {
 };
 
 IC.prototype.getId = function () {
-  return this.manager.id;
-};
-
-IC.prototype.status = function *() {
-  let numberOfServerConnections = yield (cb) => {
-    this.manager.server.server.getConnections(cb);
-  };
-
-  let result = {
-    id: utils.toPublicId(this.options),
-    h: os.hostname(),
-    l: os.loadavg(),
-    pid: process.pid,
-    nodes: [],
-    number_of_server_connections: numberOfServerConnections
-  };
-
-  for (let node of this.manager.mapById.values()) {
-    let response = yield dataHandler.req(node.getSocket(), 'status', {});
-    result.nodes.push(response);
-  }
-
-  return result;
+  return this.manager.cfg.id;
 };
