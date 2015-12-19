@@ -35,10 +35,8 @@ describe('e2e', function () {
         //console.log(i, 'established', id);
       });
 
-      instance.on('message', function (message, node) {
-        console.error('1213123123131231313123123123');
-        //console.error(arguments);
-        instance.respond(message.id, true, { data: true });
+      instance.on('message', function (message, respond) {
+        respond(null, {data: true})
       });
 
       yield instance.startServer();

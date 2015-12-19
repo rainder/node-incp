@@ -31,9 +31,12 @@ for (let i = 0; i < NUMBER_OF_INSTANCES; i++) {
   });
 }
 
+console.log(`creating ${NUMBER_OF_INSTANCES} instances`);
+
 co(function *() {
   let ps = [];
   let ics = [];
+  console.time('benchmark');
 
   for (let cfg of cfgs) {
 
@@ -76,4 +79,5 @@ co(function *() {
     return a + b;
   }) === NUMBER_OF_INSTANCES * (NUMBER_OF_INSTANCES - 1));
 
+  console.timeEnd('benchmark');
 }).catch(utils.printError);
