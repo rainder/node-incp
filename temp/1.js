@@ -9,6 +9,8 @@ let inc = 0;
 
 co(function *() {
   clear();
+  yield (cb) => setTimeout(cb, 200);
+
   let random = Math.round(Math.random() * 10);
   let ic = new IC({
     name: 'poi',
@@ -17,9 +19,9 @@ co(function *() {
     port: process.env.PORT
   });
 
-  ic.on('message', (message, node) => {
-    console.log(`GoT MESSAGE FROM ${node}`, message);
-    ic.respond(message.id, true, { h: 5 });
+  ic.on('message', (message, respond) => {
+    console.log(`GOT MESSAGE`, message, !!respond);
+    //respond(message.id, true, { h: 5 });
   });
 
   yield ic.startServer();
@@ -41,17 +43,29 @@ co(function *() {
 
   console.log('OK!'.red);
 
-  yield (cb) => setTimeout(cb, 1000);
-  console.log('executing');
+
+  //process.on('SIGINT', function () {
+  //  co(function *() {
+  //    return yield ic.shutdown();
+  //  }).then(function () {
+  //    console.log(arguments);
+  //  });
+  //
+  //  setTimeout(function () {
+  //    console.log('KILL'.red);
+  //    process.exit(1);
+  //  }, 3000).unref();
+  //});
+
+  //yield (cb) => setTimeout(cb, 1000);
 
   let node = ic.getRandomNodeByType('brain');
   if (!node) {
     console.error('COUNT NOT FIND NODE');
     return;
   }
-  let response = yield node.sendRequest({ a: 5 });
+  let response = yield node.sendPush({ a: 5 });
   console.log(response);
-
 
 }).catch(function (err) {
   console.error(err.stack || err);
