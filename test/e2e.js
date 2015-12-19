@@ -35,9 +35,8 @@ describe('e2e', function () {
         //console.log(i, 'established', id);
       });
 
-      instance.on('message', function (message, node) {
-        //console.error(arguments);
-        instance.respond(message.id, true, { data: true });
+      instance.on('message', function (message, respond) {
+        respond(null, {data: true})
       });
 
       yield instance.startServer();
@@ -49,11 +48,17 @@ describe('e2e', function () {
       instances[instances.length] = instance;
     }
 
+    yield instances.map(function (ic) {
+      return ic.ensureConnected();
+    });
+
     //yield function (cb) {
     //  setTimeout(cb, 100);
     //};
 
     let node = instances[0].getRandomNodeByType('poi');
+
+    console.log('got random node', !!node);
 
     let r = yield node.sendRequest({
       poi: Array.from(new Array(1e6)).join('-')
@@ -80,17 +85,11 @@ describe('e2e', function () {
     ];
 
     for (let i = 0; i < 2; i++) {
-      let dfd = q.defer();
-      promises.push(dfd.promise);
       let instance = new IC({
         name: `test${i}`,
         type: 'poi',
         host: '127.0.0.1',
         port: 9500 + i
-      });
-
-      instance.on('established', function (node) {
-        dfd.resolve();
       });
 
       instance.on('message', function (json, socket) {
@@ -99,6 +98,8 @@ describe('e2e', function () {
 
       yield instance.startServer();
       instances[instances.length] = instance;
+
+      promises.push(instance.ensureConnected());
     }
 
     for (let instance of instances) {
@@ -112,21 +113,20 @@ describe('e2e', function () {
 
     for (let instance of instances) {
       for (let node of instance.manager.mapById.values()) {
-        console.log(node.getInfo());
+        console.log(node.getClientCfg());
       }
     }
 
     yield (cb) => setTimeout(cb, 100);
 
-    let numberOfConnections = yield instances.map(function *(item) {
-      let status = yield item.status();
-      return status.number_of_server_connections;
+    let numberOfConnections = yield instances.map(function *(ic) {
+      return yield ic.manager.server.getConnections();
     });
 
     let sum = numberOfConnections.reduce(function (a, b) {
       return a + b;
     });
 
-    sum.should.equal(1);
+    sum.should.equal(2);
   });
 });

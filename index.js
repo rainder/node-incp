@@ -1,121 +1,110 @@
 'use strict';
 
-const _ = require('lodash');
-const util = require('util');
 const events = require('events');
-const os = require('os');
-
 const Manager = require('./lib/manager');
 const utils = require('./lib/utils');
-const Node = require('./lib/node');
 const callbacks = require('./lib/callbacks');
-const dataHandler = require('./lib/data-handler');
 
-module.exports = IC;
+module.exports = class IC extends events.EventEmitter {
+  /**
+   *
+   * @param options
+   */
+  constructor(options) {
+    super();
 
-util.inherits(IC, events.EventEmitter);
+    this.options = options;
+    this.manager = new Manager(options);
+    this.nodes = new Set();
 
-/**
- *
- * @param options
- * @constructor
- */
-function IC(options) {
-  this.options = options;
-  this.manager = new Manager(options);
-  this.nodes = new Set();
-
-  utils.pipeEvent('established', this.manager, this);
-  utils.pipeEvent('message', this.manager, this);
-  utils.pipeEvent('error', this.manager, this);
-}
-
-/**
- *
- */
-IC.prototype.startServer = function *() {
-  yield this.manager.startServer();
-};
-
-/**
- *
- * @param address
- */
-IC.prototype.connect = function *(address) {
-  yield this.manager.connect(address);
-};
-
-/**
- *
- * @param data
- * @returns {Array}
- */
-IC.prototype.broadcast = function (data) {
-  let promises = [];
-
-  for (let node of this.manager.mapById.values()) {
-    promises[promises.length] = node.sendPush(data);
+    utils.pipeEvent('established', this.manager, this);
+    utils.pipeEvent('message', this.manager, this);
+    utils.pipeEvent('error', this.manager, this);
   }
 
-  return promises;
-};
-
-/**
- *
- * @param type
- * @returns {*}
- */
-IC.prototype.getRandomNodeByType = function (type) {
-  let collection = this.manager.mapByType.get(type);
-  if (!collection) {
-    return null;
+  /**
+   *
+   * @returns {*}
+   */
+  *startServer() {
+    return yield this.manager.startServer();
   }
 
-  let index = utils.getRandomInt(0, collection.length - 1);
-  return collection[index];
-};
+  /**
+   *
+   * @returns {*}
+   */
+  *connect(address) {
+    return yield this.manager.connect(address);
+  }
 
-IC.prototype.getNodeById = function (id) {
-  return this.manager.mapById.get(id);
-};
+  /**
+   *
+   */
+  *ensureConnected() {
+    let prevPromises = [];
 
-/**
- *
- * @param id {*}
- * @param success {boolean}
- * @param data {*}
- * @returns {boolean}
- */
-IC.prototype.respond = function (id, success, data) {
-  return callbacks.execute(id, success, data);
-};
+    while (true) {
+      let promises = Array.from(this.manager.mapById.values()).map(function (node) {
+        return node.duplexDFD.promise;
+      });
 
-IC.prototype.shutdown = function *() {
+      if (promises.length === prevPromises.length) {
+        break;
+      }
 
-};
+      yield promises;
+      prevPromises = promises;
+    }
+  }
 
-IC.prototype.getId = function () {
-  return this.manager.id;
-};
+  /**
+   *
+   * @param type
+   * @returns {*}
+   */
+  getRandomNodeByType(type) {
+    let collection = this.manager.mapByType.get(type);
+    if (!collection) {
+      return null;
+    }
 
-IC.prototype.status = function *() {
-  let numberOfServerConnections = yield (cb) => {
-    this.manager.server.server.getConnections(cb);
+    let index = utils.getRandomInt(0, collection.length - 1);
+    return collection[index];
   };
 
-  let result = {
-    id: utils.toPublicId(this.options),
-    h: os.hostname(),
-    l: os.loadavg(),
-    pid: process.pid,
-    nodes: [],
-    number_of_server_connections: numberOfServerConnections
-  };
-
-  for (let node of this.manager.mapById.values()) {
-    let response = yield dataHandler.req(node.getSocket(), 'status', {});
-    result.nodes.push(response);
+  /**
+   *
+   * @param id
+   * @returns {*}
+   */
+  getNodeById(id) {
+    return this.manager.mapById.get(id);
   }
 
-  return result;
+  /**
+   *
+   * @param id
+   * @param success
+   * @param data
+   * @returns {boolean}
+   */
+  respond(id, success, data) {
+    return callbacks.execute(id, success, data);
+  }
+
+  /**
+   *
+   * @returns {*}
+   */
+  getId() {
+    return this.manager.cfg.id;
+  }
+
+  /**
+   *
+   */
+  *shutdown() {
+    return yield this.manager.shutdown();
+  }
 };
