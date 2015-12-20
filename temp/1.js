@@ -19,9 +19,11 @@ co(function *() {
     port: process.env.PORT
   });
 
+  console.log(colors.green(process.env.TYPE + ' ' + process.env.PORT + ' ' + process.env.TARGETS));
+
   ic.on('message', (message, respond) => {
-    console.log(`GOT MESSAGE`, message, !!respond);
-    //respond(message.id, true, { h: 5 });
+    console.log(`GOT MESSAGE`, message);
+    respond(null, 'poipoi');
   });
 
   yield ic.startServer();
@@ -64,7 +66,7 @@ co(function *() {
     console.error('COUNT NOT FIND NODE');
     return;
   }
-  let response = yield node.sendPush({ a: 5 });
+  let response = yield node.sendRequest({ a: 5 });
   console.log(response);
 
 }).catch(function (err) {
