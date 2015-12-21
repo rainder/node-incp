@@ -23,7 +23,7 @@ co(function *() {
 
   ic.on('message', (message, respond) => {
     console.log(`GOT MESSAGE`, message);
-    respond(null, 'poipoi');
+    respond(null, 'response');
   });
 
   yield ic.startServer();
@@ -66,7 +66,7 @@ co(function *() {
     console.error('COUNT NOT FIND NODE');
     return;
   }
-  let response = yield node.sendRequest({ a: 5 });
+  let response = yield node.sendRequest({ a: Math.random() });
   console.log(response);
 
 }).catch(function (err) {
