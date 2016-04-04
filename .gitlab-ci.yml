@@ -1,0 +1,19 @@
+image: node:5.10.0
+
+cache:
+  untracked: false
+  paths:
+    - node_modules/
+
+stages:
+  - test
+
+before_script:
+  - apt-get update -y > /dev/null
+  - apt-get install libkrb5-dev build-essential git openssh-client -y > /dev/null
+  - npm install --unsafe-perm --loglevel warn > /dev/null
+
+all-tests:
+  stage: test
+  script:
+    - npm run test
