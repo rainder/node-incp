@@ -316,4 +316,73 @@ describe('e2e', function () {
     }
   });
 
+  it('should suggest known nodes and broadcast message', function *() {
+    const ics = [
+      new IC({
+        name: 'node1',
+        type: 'master',
+        host: '127.0.0.1',
+        port: 50020
+      }),
+      new IC({
+        name: 'node2',
+        type: 'master',
+        host: '127.0.0.1',
+        port: 50021
+      }),
+      new IC({
+        name: 'node3',
+        type: 'master',
+        host: '127.0.0.1',
+        port: 50022
+      })
+    ];
+
+    yield ics.map(ic => ic.startServer());
+
+    yield ics[0].connectTo('127.0.0.1', 50021);
+    yield ics[1].connectTo('127.0.0.1', 50020);
+    yield ics[2].connectTo('127.0.0.1', 50020);
+
+    ics[1].setMessageHandler(function *() {
+      return { 'ok': 1 }
+    });
+
+    ics[2].setMessageHandler(function *() {
+      return { 'ok': 2 }
+    });
+
+    {
+      const nodes = ics[0].getNodes();
+      nodes.length.should.equals(2);
+      nodes.map(item => item.info.runtime_id).sort().should.deep.equals([
+        ics[1].getRuntimeId(),
+        ics[2].getRuntimeId()
+      ].sort());
+    }
+
+    {
+      const nodes = ics[1].getNodes();
+      nodes.length.should.equals(2);
+      nodes.map(item => item.info.runtime_id).sort().should.deep.equals([
+        ics[0].getRuntimeId(),
+        ics[2].getRuntimeId()
+      ].sort());
+    }
+
+    {
+      const nodes = ics[2].getNodes();
+      nodes.length.should.equals(2);
+      nodes.map(item => item.info.runtime_id).sort().should.deep.equals([
+        ics[0].getRuntimeId(),
+        ics[1].getRuntimeId()
+      ].sort());
+    }
+
+    for (let node of ics[0].getNodes()) {
+      const response = yield node.send({ test: 1 });
+      console.log(response);
+    }
+  });
+
 });

@@ -69,7 +69,7 @@ module.exports = class INCP {
    *
    */
   _onExternalMessage(message) {
-
+    console.error('INCP unhandled external message', message);
   }
 
   /**
@@ -143,6 +143,19 @@ module.exports = class INCP {
    */
   getNodesByType(type) {
     return this.nodesByType.getMap(type);
+  }
+
+  /**
+   *
+   * @param type
+   * @returns {*}
+   */
+  getRandomNodeByType(type) {
+    const nodes = this.nodesByType.getMap(type);
+    const keys = Array.from(nodes.keys())
+    const key = keys[Math.floor(Math.random() * keys.length)];
+
+    return nodes.get(key);
   }
 
   /**
