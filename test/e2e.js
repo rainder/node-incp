@@ -36,7 +36,7 @@ describe('e2e', function () {
       });
 
       instance.on('message', function (message, respond) {
-        respond(null, {data: true})
+        respond(null, { data: true })
       });
 
       yield instance.startServer();
@@ -128,5 +128,26 @@ describe('e2e', function () {
     });
 
     sum.should.equal(2);
+  });
+
+  it('should support a loopback', function *() {
+    let instance = new IC({
+      name: `brain1`,
+      type: 'brain',
+      host: '127.0.0.1',
+      port: 9700
+    });
+
+    yield instance.startServer();
+
+    const loopback = instance.getLoopback();
+
+    instance.on('message', function (msg, respond) {
+      respond(null, { b: 6 })
+    });
+
+    const response = yield loopback.sendRequest({ a: 3 });
+    response.should.have.keys(['b']);
+    response.b.should.equals(6);
   });
 });

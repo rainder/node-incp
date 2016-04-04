@@ -111,6 +111,14 @@ module.exports = class IC extends events.EventEmitter {
 
   /**
    *
+   * @returns {*}
+   */
+  getLoopback() {
+    return this.manager.loopback;
+  }
+
+  /**
+   *
    */
   *shutdown() {
     return yield this.manager.shutdown();
