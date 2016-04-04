@@ -9,6 +9,7 @@ const router = require('./lib/router');
 const validation = require('./lib/validation');
 const Node = require('./lib/node');
 const Request = require('./lib/message/ic-request');
+const DoubleMap = require('./lib/double-map');
 
 const V = validation.V;
 const validate = validation([{
@@ -32,6 +33,8 @@ class IC {
     this.runtimeId = objectId().toString();
     this.options = options;
     this.nodes = new Map();
+    this.nodesByType = new DoubleMap();
+    this.nodeById = new Map();
 
     const server = new Server(options.host, options.port);
 
@@ -117,6 +120,9 @@ class IC {
       })
       .send(node.getSocket());
 
+    this.nodesByType.add(node.info.type, node.getType(), node);
+    this.nodeById.set(node.getId(), node);
+
     return node;
   }
 
@@ -138,6 +144,40 @@ class IC {
    */
   getId() {
     return `${this.options.host}:${this.options.port}`;
+  }
+
+  /**
+   *
+   * @returns {Map|*}
+   */
+  getNodes() {
+    const result = [];
+
+    for (let node of this.nodes.values()) {
+      if (!node.info.type) {
+        continue;
+      }
+
+      result.push(node);
+    }
+
+    return result;
+  }
+
+  /**
+   *
+   * @param type
+   * @returns {V}
+   */
+  getNodesByType(type) {
+    return this.nodesByType.getMap(type);
+  }
+
+  /**
+   *
+   */
+  getNodeById(id) {
+    return this.nodeById.get(id);
   }
 
   /**

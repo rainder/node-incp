@@ -157,7 +157,6 @@ describe('e2e', function () {
       data: { host: '127.0.0.1', port: PORT2 }
     });
 
-
     yield connectionDFD.promise;
 
     const serverRequest = yield serverRequestDFD.promise;
@@ -210,4 +209,43 @@ describe('e2e', function () {
     //console.log(ics[1].nodes);
   });
 
+  it('should use public method send()', function *() {
+    const ics = [
+      new IC({
+        name: 'node1',
+        type: 'master',
+        host: '127.0.0.1',
+        port: 50008
+      }),
+      new IC({
+        name: 'node2',
+        type: 'slave',
+        host: '127.0.0.1',
+        port: 50009
+      })
+    ];
+
+    ics[0].setMessageHandler(function *(data) {
+      console.log('ic0', data);
+    });
+
+    ics[1].setMessageHandler(function *(data) {
+      data.should.have.keys(['poi']);
+      return { response: 123 };
+    });
+
+    yield ics.map(ic => ic.startServer());
+    yield ics[0].connectTo('127.0.0.1', 50009);
+
+    const nodes = ics[0].getNodes();
+    nodes.length.should.equals(1);
+
+    nodes[0].info.type.should.equals('slave');
+    const response = yield nodes[0].send({ poi: 1 });
+    response.should.have.keys(['response']);
+
+    ics[0].getNodesByType('slave').size.should.equals(1);
+    ics[1].getNodesByType('master').size.should.equals(1);
+    ics[1].getNodesByType('slave').size.should.equals(0);
+  });
 });
