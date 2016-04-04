@@ -89,8 +89,12 @@ describe('e2e', function () {
       responseDFD.resolve(data);
     });
 
+    function CustomError(message) {
+      this.message = message;
+    }
+
     ic.setMessageHandler(function *(data) {
-      throw new TypeError('123');
+      throw new CustomError('123');
     });
 
     connection.send({
@@ -122,6 +126,7 @@ describe('e2e', function () {
     const serverRequestDFD = q.defer();
 
     const connection = yield createConnection(PORT, '127.0.0.1', function (data) {
+      //console.log('>>', data);
       responseDFD.resolve(data);
     });
 
@@ -133,13 +138,15 @@ describe('e2e', function () {
 
     yield cb => server2.once('listening', () => cb());
 
-    const dfd = q.defer();
+    const connectionDFD = q.defer();
 
     server2.on('connection', function (connection) {
-      dfd.resolve();
+      connection.setEncoding('utf-8');
+      connectionDFD.resolve();
 
       connection.on('data', (data) => {
-        serverRequestDFD.resolve(JSON.parse(data));
+        const json = JSON.parse(data);
+        serverRequestDFD.resolve(json);
       });
     });
 
@@ -147,18 +154,28 @@ describe('e2e', function () {
       id: '1',
       type: 'request',
       method: 'handshake',
-      data: { host: '127.0.0.1', port: PORT2, info: { type: 'poipoi' } }
+      data: { host: '127.0.0.1', port: PORT2 }
     });
 
-    const response = yield responseDFD.promise;
-    response.success.should.equals(true);
-    response.data.new.should.equals(true);
 
-    yield dfd.promise;
+    yield connectionDFD.promise;
 
     const serverRequest = yield serverRequestDFD.promise;
     serverRequest.type.should.equals('request')
     serverRequest.method.should.equals('handshake');
+
+    connection.send({
+      id: serverRequest.id,
+      type: 'response',
+      success: true,
+      data: {
+        type: 'poipoi'
+      }
+    });
+
+    const response = yield responseDFD.promise;
+    response.success.should.equals(true);
+    response.data.type.should.equals('none');
 
     ic.nodes.size.should.equals(1);
     ic.nodes.get(`127.0.0.1:${PORT2}`).info.type.should.equals('poipoi');
@@ -181,12 +198,7 @@ describe('e2e', function () {
     ];
 
     yield ics.map(ic => ic.startServer());
-
-    //console.log(ics);
-
     yield ics[0].connectTo('127.0.0.1', 50007);
-
-    //yield cb => setTimeout(cb, 200);
 
     ics[0].nodes.size.should.equals(1);
     ics[1].nodes.size.should.equals(1);
