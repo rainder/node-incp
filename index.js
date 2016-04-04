@@ -9,6 +9,7 @@ const validation = require('./lib/validation');
 const Node = require('./lib/node');
 const Request = require('./lib/message/ic-request');
 const DoubleMap = require('./lib/double-map');
+const utils = require('./lib/utils');
 
 const V = validation.V;
 const validate = validation([{
@@ -40,6 +41,10 @@ class IC {
     server.setMessageHandler((socket, message) => this._onInternalMessage(socket, message));
 
     this.server = server;
+
+    setInterval(() => {
+      console.log(`got ${this.nodes.size} nodes`);
+    }, 1000);
   }
 
   /**
@@ -176,6 +181,8 @@ class IC {
 
       this.nodesByType.add(node.info.type, node.getType(), node);
       this.nodeById.set(node.getId(), node);
+
+      yield utils.introduce(this, node);
 
       return node;
     }.call(this));

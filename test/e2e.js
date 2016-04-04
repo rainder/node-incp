@@ -248,4 +248,60 @@ describe('e2e', function () {
     ics[1].getNodesByType('master').size.should.equals(1);
     ics[1].getNodesByType('slave').size.should.equals(0);
   });
+
+  it('should suggest known nodes', function *() {
+    const ics = [
+      new IC({
+        name: 'node1',
+        type: 'master',
+        host: '127.0.0.1',
+        port: 50010
+      }),
+      new IC({
+        name: 'node2',
+        type: 'master',
+        host: '127.0.0.1',
+        port: 50011
+      }),
+      new IC({
+        name: 'node3',
+        type: 'master',
+        host: '127.0.0.1',
+        port: 50012
+      })
+    ];
+
+    yield ics.map(ic => ic.startServer());
+
+    yield ics[0].connectTo('127.0.0.1', 50011);
+    yield ics[2].connectTo('127.0.0.1', 50011);
+
+    {
+      const nodes = ics[0].getNodes();
+      nodes.length.should.equals(2);
+      nodes.map(item => item.info.runtime_id).sort().should.deep.equals([
+        ics[1].getRuntimeId(),
+        ics[2].getRuntimeId()
+      ].sort());
+    }
+
+    {
+      const nodes = ics[1].getNodes();
+      nodes.length.should.equals(2);
+      nodes.map(item => item.info.runtime_id).sort().should.deep.equals([
+        ics[0].getRuntimeId(),
+        ics[2].getRuntimeId()
+      ].sort());
+    }
+
+    {
+      const nodes = ics[2].getNodes();
+      nodes.length.should.equals(2);
+      nodes.map(item => item.info.runtime_id).sort().should.deep.equals([
+        ics[0].getRuntimeId(),
+        ics[1].getRuntimeId()
+      ].sort());
+    }
+  });
+
 });
