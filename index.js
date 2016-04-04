@@ -49,7 +49,7 @@ module.exports = class INCP {
   /**
    *
    * @param options
-   * @returns {IC}
+   * @returns {INCP}
    */
   static create(options) {
     return new IC(options);
@@ -75,7 +75,7 @@ module.exports = class INCP {
   /**
    *
    * @param messageHandler {Function*}
-   * @returns {IC}
+   * @returns {INCP}
    */
   setMessageHandler(messageHandler) {
     this._onExternalMessage = messageHandler;
