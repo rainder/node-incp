@@ -103,6 +103,14 @@ module.exports = class IC extends events.EventEmitter {
 
   /**
    *
+   * @returns {*}
+   */
+  getType() {
+    return this.manager.cfg.type;
+  }
+
+  /**
+   *
    */
   *shutdown() {
     return yield this.manager.shutdown();
