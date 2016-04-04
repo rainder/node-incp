@@ -1,104 +1,127 @@
 'use strict';
 
-const events = require('events');
-const Manager = require('./lib/manager');
-const utils = require('./lib/utils');
-const callbacks = require('./lib/callbacks');
+const _ = require('lodash');
+const R = require('ramda');
+const objectId = require('objectid');
 
-module.exports = class IC extends events.EventEmitter {
+const Server = require('./lib/server');
+const router = require('./lib/router');
+const validation = require('./lib/validation');
+const Node = require('./lib/node');
+const Request = require('./lib/message/ic-request');
+
+const V = validation.V;
+const validate = validation([{
+  $schema: {
+    name: V(String).required(),
+    type: V(String).required(),
+    host: V(String).required(),
+    port: V(Number).required()
+  }
+}]);
+
+class IC {
+
+  /**
+   *
+   * @param options {{host, port, type, name}}
+   */
+  constructor(options) {
+    validate(options);
+
+    this.runtimeId = objectId().toString();
+    this.options = options;
+    this.nodes = new Map();
+
+    const server = new Server(options.host, options.port);
+
+    server.setMessageHandler(R.bind(this._onServerMessage, this));
+
+    this.server = server;
+  }
+
   /**
    *
    * @param options
+   * @returns {IC}
    */
-  constructor(options) {
-    super();
+  static create(options) {
+    return new IC(options);
+  }
 
-    this.options = options;
-    this.manager = new Manager(options);
-    this.nodes = new Set();
+  /**
+   *
+   * @param socket
+   * @param message
+   * @private
+   */
+  _onServerMessage(socket, message) {
+    router.route(this, socket, message);
+  }
 
-    utils.pipeEvent('established', this.manager, this);
-    utils.pipeEvent('message', this.manager, this);
-    utils.pipeEvent('error', this.manager, this);
+  /**
+   *
+   */
+  *messageHandler() {
+
+  }
+
+  /**
+   *
+   * @param messageHandler {Function*}
+   * @returns {IC}
+   */
+  setMessageHandler(messageHandler) {
+    this.messageHandler = messageHandler;
+    return this;
+  }
+
+  /**
+   *
+   * @returns {Promise}
+   */
+  startServer() {
+    return this.server.listen();
   }
 
   /**
    *
    * @returns {*}
    */
-  *startServer() {
-    return yield this.manager.startServer();
+  getRuntimeId() {
+    return this.runtimeId;
   }
 
   /**
    *
-   * @returns {*}
+   * @param host
+   * @param port
    */
-  *connect(address) {
-    return yield this.manager.connect(address);
-  }
+  *connectTo(host, port) {
+    const id = `${host}:${port}`;
 
-  /**
-   *
-   */
-  *ensureConnected() {
-    let prevPromises = [];
-
-    while (true) {
-      let promises = Array.from(this.manager.mapById.values()).map(function (node) {
-        return node.duplexDFD.promise;
-      });
-
-      if (promises.length === prevPromises.length) {
-        break;
-      }
-
-      yield promises;
-      prevPromises = promises;
+    if (this.nodes.get('id')) {
+      return this.nodes.get('id');
     }
+
+    const node = new Node(host, port);
+    node.setMessageHandler((socket, message) => this._onServerMessage(socket, message));
+
+    this.nodes.set(id, node);
+    yield node.connect();
+
+    node.info = yield Request
+      .create('handshake', {
+        host: this.options.host,
+        port: this.options.port
+      })
+      .send(node.getSocket());
+
+    return node;
   }
 
-  /**
-   *
-   * @param type
-   * @returns {*}
-   */
-  getRandomNodeByType(type) {
-    let collection = this.manager.mapByType.get(type);
-    if (!collection) {
-      return null;
-    }
-
-    let index = utils.getRandomInt(0, collection.length - 1);
-    return collection[index];
-  };
-
-  /**
-   *
-   * @param id
-   * @returns {*}
-   */
-  getNodeById(id) {
-    return this.manager.mapById.get(id);
-  }
-
-  /**
-   *
-   * @param id
-   * @param success
-   * @param data
-   * @returns {boolean}
-   */
-  respond(id, success, data) {
-    return callbacks.execute(id, success, data);
-  }
-
-  /**
-   *
-   * @returns {*}
-   */
-  getId() {
-    return this.manager.cfg.id;
+  getName() {
+    return this.options.name;
   }
 
   /**
@@ -106,21 +129,27 @@ module.exports = class IC extends events.EventEmitter {
    * @returns {*}
    */
   getType() {
-    return this.manager.cfg.type;
+    return this.options.type;
   }
 
   /**
    *
    * @returns {*}
    */
-  getLoopback() {
-    return this.manager.loopback;
+  getId() {
+    return `${this.options.host}:${this.options.port}`;
   }
 
   /**
    *
+   * @returns {Promise}
    */
-  *shutdown() {
-    return yield this.manager.shutdown();
+  shutdown() {
+    return new Promise((resolve, reject) => {
+      this.server.close();
+      resolve();
+    });
   }
-};
+}
+
+module.exports = IC;

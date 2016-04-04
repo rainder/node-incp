@@ -12,142 +12,190 @@ const utils = require('./../lib/utils');
 chai.should();
 
 describe('e2e', function () {
-  this.timeout(10000);
+  this.timeout(2000);
 
-  it('should create three instances', function *() {
-    let instances = [];
-    let nodes = [
-      [],
-      ['127.0.0.1:9401'],
-      ['127.0.0.1:9401']
+  function *createConnection(port, host, cb) {
+    const connection = net.createConnection();
+    connection.connect(port, host);
+    yield cb => connection.on('connect', cb);
+
+    connection
+      .setEncoding('utf-8')
+      .on('data', data => {
+        cb(JSON.parse(data));
+      });
+
+    return {
+      send: data => connection.write(JSON.stringify(data) + '\n')
+    };
+  }
+
+  it('should start a server', function *() {
+    const ic = new IC({
+      name: 'test',
+      type: 'none',
+      host: '0.0.0.0',
+      port: 50001
+    });
+
+    yield ic.startServer();
+  });
+
+  it('should send a message', function *() {
+    const PORT = 50002;
+
+    const ic = new IC({
+      name: 'test',
+      type: 'none',
+      host: '0.0.0.0',
+      port: PORT
+    });
+
+    yield ic.startServer();
+
+    const responseDFD = q.defer();
+    const connection = yield createConnection(PORT, '127.0.0.1', function (data) {
+      responseDFD.resolve(data);
+    });
+
+    ic.setMessageHandler(function *(data) {
+      return { 'response': true }
+    });
+
+    connection.send({
+      id: '1',
+      type: 'request',
+      method: 'external',
+      data: { a: 4 }
+    });
+
+    const response = yield responseDFD.promise;
+    response.success.should.equals(true);
+  });
+
+  it('should send an error message', function *() {
+    const PORT = 50003;
+    const ic = new IC({
+      name: 'test',
+      type: 'none',
+      host: '0.0.0.0',
+      port: PORT
+    });
+
+    yield ic.startServer();
+
+    const responseDFD = q.defer();
+    const connection = yield createConnection(PORT, '127.0.0.1', function (data) {
+      responseDFD.resolve(data);
+    });
+
+    ic.setMessageHandler(function *(data) {
+      throw new TypeError('123');
+    });
+
+    connection.send({
+      id: '1',
+      type: 'request',
+      method: 'external',
+      data: { b: 4 }
+    });
+
+    const response = yield responseDFD.promise;
+    response.success.should.equals(false);
+    response.data.message.should.equals('123');
+  });
+
+  it('should send register a new node and connect to it', function *() {
+    const PORT = 50004;
+    const PORT2 = 50005;
+
+    const ic = new IC({
+      name: 'test',
+      type: 'none',
+      host: '0.0.0.0',
+      port: PORT
+    });
+
+    yield ic.startServer();
+
+    const responseDFD = q.defer();
+    const serverRequestDFD = q.defer();
+
+    const connection = yield createConnection(PORT, '127.0.0.1', function (data) {
+      responseDFD.resolve(data);
+    });
+
+    const server2 = net.Server();
+    server2.listen({
+      host: '0.0.0.0',
+      port: PORT2
+    });
+
+    yield cb => server2.once('listening', () => cb());
+
+    const dfd = q.defer();
+
+    server2.on('connection', function (connection) {
+      dfd.resolve();
+
+      connection.on('data', (data) => {
+        serverRequestDFD.resolve(JSON.parse(data));
+      });
+    });
+
+    connection.send({
+      id: '1',
+      type: 'request',
+      method: 'handshake',
+      data: { host: '127.0.0.1', port: PORT2, info: { type: 'poipoi' } }
+    });
+
+    const response = yield responseDFD.promise;
+    response.success.should.equals(true);
+    response.data.new.should.equals(true);
+
+    yield dfd.promise;
+
+    const serverRequest = yield serverRequestDFD.promise;
+    serverRequest.type.should.equals('request')
+    serverRequest.method.should.equals('handshake');
+
+    ic.nodes.size.should.equals(1);
+    ic.nodes.get(`127.0.0.1:${PORT2}`).info.type.should.equals('poipoi');
+  });
+
+  it('should connect two nodes', function *() {
+    const ics = [
+      new IC({
+        name: 'node1',
+        type: 'none',
+        host: '127.0.0.1',
+        port: 50006
+      }),
+      new IC({
+        name: 'node2',
+        type: 'none',
+        host: '127.0.0.1',
+        port: 50007
+      })
     ];
 
-    for (let i = 1; i <= 3; i++) {
-      let instance = new IC({
-        name: `test${i}`,
-        type: 'poi',
-        host: '127.0.0.1',
-        port: 9400 + i
-      });
+    yield ics.map(ic => ic.startServer());
 
-      instance.on('established', function (node) {
-        //console.log(i, node.getId());
-        //console.log(i, 'established', id);
-      });
+    //console.log(ics);
 
-      instance.on('message', function (message, respond) {
-        respond(null, { data: true })
-      });
+    yield ics[0].connectTo('127.0.0.1', 50007);
 
-      yield instance.startServer();
-      for (let node of nodes[i - 1]) {
-        let address = utils.parseAddress(node);
-        yield instance.connect(address);
-      }
+    //yield cb => setTimeout(cb, 200);
 
-      instances[instances.length] = instance;
-    }
+    ics[0].nodes.size.should.equals(1);
+    ics[1].nodes.size.should.equals(1);
 
-    yield instances.map(function (ic) {
-      return ic.ensureConnected();
-    });
+    Array.from(ics[0].nodes.values())[0].info.type.should.equals('none');
+    Array.from(ics[1].nodes.values())[0].info.type.should.equals('none');
 
-    //yield function (cb) {
-    //  setTimeout(cb, 100);
-    //};
-
-    let node = instances[0].getRandomNodeByType('poi');
-
-    console.log('got random node', !!node);
-
-    let r = yield node.sendRequest({
-      poi: Array.from(new Array(1e6)).join('-')
-    });
-
-    r.data.should.equals(true);
-
-    //console.log(instances);
-    //let num = yield function (cb) {
-    //  instances[0].server.server.getConnections(function (err, num) {
-    //    cb(err, num);
-    //  });
-    //};
-    //
-    //console.log(num);
+    //console.log(ics[0].nodes);
+    //console.log(ics[1].nodes);
   });
 
-  it('should create two instances 2', function *() {
-    let instances = [];
-    let promises = [];
-    let nodes = [
-      ['127.0.0.1:9501'],
-      ['127.0.0.1:9500']
-    ];
-
-    for (let i = 0; i < 2; i++) {
-      let instance = new IC({
-        name: `test${i}`,
-        type: 'poi',
-        host: '127.0.0.1',
-        port: 9500 + i
-      });
-
-      instance.on('message', function (json, socket) {
-        console.log(json, !!socket);
-      });
-
-      yield instance.startServer();
-      instances[instances.length] = instance;
-
-      promises.push(instance.ensureConnected());
-    }
-
-    for (let instance of instances) {
-      for (let node of nodes[instances.indexOf(instance)]) {
-        let address = utils.parseAddress(node);
-        yield instance.connect(address);
-      }
-    }
-
-    yield promises;
-
-    for (let instance of instances) {
-      for (let node of instance.manager.mapById.values()) {
-        console.log(node.getClientCfg());
-      }
-    }
-
-    yield (cb) => setTimeout(cb, 100);
-
-    let numberOfConnections = yield instances.map(function *(ic) {
-      return yield ic.manager.server.getConnections();
-    });
-
-    let sum = numberOfConnections.reduce(function (a, b) {
-      return a + b;
-    });
-
-    sum.should.equal(2);
-  });
-
-  it('should support a loopback', function *() {
-    let instance = new IC({
-      name: `brain1`,
-      type: 'brain',
-      host: '127.0.0.1',
-      port: 9700
-    });
-
-    yield instance.startServer();
-
-    const loopback = instance.getLoopback();
-
-    instance.on('message', function (msg, respond) {
-      respond(null, { b: 6 })
-    });
-
-    const response = yield loopback.sendRequest({ a: 3 });
-    response.should.have.keys(['b']);
-    response.b.should.equals(6);
-  });
 });

@@ -16,11 +16,14 @@
     "co-try-catch": "^0.1.2",
     "colors": "^1.1.2",
     "debug": "^2.2.0",
+    "json-schema-validation-pipeline": "^0.6.1",
     "lodash": "^3.10.1",
     "object-deep": "^0.1.1",
     "objectid": "^3.2.1",
     "q": "^1.4.1",
-    "require-dir": "^0.3.0"
+    "ramda": "^0.20.1",
+    "require-dir": "^0.3.0",
+    "skerla-callbacks": "^0.1.3"
   },
   "devDependencies": {
     "chai": "^3.3.0",
