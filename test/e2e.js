@@ -15,7 +15,7 @@ describe('e2e', function () {
   this.timeout(2000);
 
   function *createConnection(port, host, cb) {
-    const connection = net.createConnection();
+    const connection = net.Socket();
     connection.connect(port, host);
     yield cb => connection.on('connect', cb);
 

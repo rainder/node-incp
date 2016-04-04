@@ -1,7 +1,6 @@
 'use strict';
 
-const _ = require('lodash');
-const R = require('ramda');
+const co = require('co');
 const objectId = require('objectid');
 
 const Server = require('./lib/server');
@@ -38,7 +37,7 @@ class IC {
 
     const server = new Server(options.host, options.port);
 
-    server.setMessageHandler(R.bind(this._onServerMessage, this));
+    server.setMessageHandler((socket, message) => this._onInternalMessage(socket, message));
 
     this.server = server;
   }
@@ -58,14 +57,14 @@ class IC {
    * @param message
    * @private
    */
-  _onServerMessage(socket, message) {
+  _onInternalMessage(socket, message) {
     router.route(this, socket, message);
   }
 
   /**
    *
    */
-  *messageHandler() {
+  _onExternalMessage(message) {
 
   }
 
@@ -75,7 +74,7 @@ class IC {
    * @returns {IC}
    */
   setMessageHandler(messageHandler) {
-    this.messageHandler = messageHandler;
+    this._onExternalMessage = messageHandler;
     return this;
   }
 
@@ -93,37 +92,6 @@ class IC {
    */
   getRuntimeId() {
     return this.runtimeId;
-  }
-
-  /**
-   *
-   * @param host
-   * @param port
-   */
-  *connectTo(host, port) {
-    const id = `${host}:${port}`;
-
-    if (this.nodes.get('id')) {
-      return this.nodes.get('id');
-    }
-
-    const node = new Node(host, port);
-    node.setMessageHandler((socket, message) => this._onServerMessage(socket, message));
-
-    this.nodes.set(id, node);
-    yield node.connect();
-
-    node.info = yield Request
-      .create('handshake', {
-        host: this.options.host,
-        port: this.options.port
-      })
-      .send(node.getSocket());
-
-    this.nodesByType.add(node.info.type, node.getType(), node);
-    this.nodeById.set(node.getId(), node);
-
-    return node;
   }
 
   getName() {
@@ -178,6 +146,39 @@ class IC {
    */
   getNodeById(id) {
     return this.nodeById.get(id);
+  }
+
+  /**
+   *
+   * @param host
+   * @param port
+   */
+  connectTo(host, port) {
+    return co(function *() {
+      const id = `${host}:${port}`;
+
+      if (this.nodes.get('id')) {
+        return this.nodes.get('id');
+      }
+
+      const node = new Node(host, port);
+      node.setMessageHandler((socket, message) => this._onInternalMessage(socket, message));
+
+      this.nodes.set(id, node);
+      yield node.connect();
+
+      node.info = yield Request
+        .create('handshake', {
+          host: this.options.host,
+          port: this.options.port
+        })
+        .send(node.getSocket());
+
+      this.nodesByType.add(node.info.type, node.getType(), node);
+      this.nodeById.set(node.getId(), node);
+
+      return node;
+    }.call(this));
   }
 
   /**
