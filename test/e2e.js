@@ -126,7 +126,7 @@ describe('e2e', function () {
     const serverRequestDFD = q.defer();
 
     const connection = yield createConnection(PORT, '127.0.0.1', function (data) {
-      //console.log('>>', data);
+      console.log('>>', data);
       responseDFD.resolve(data);
     });
 
@@ -140,13 +140,25 @@ describe('e2e', function () {
 
     const connectionDFD = q.defer();
 
-    server2.on('connection', function (connection) {
-      connection.setEncoding('utf-8');
+    server2.on('connection', function (socket) {
+      socket.setEncoding('utf-8');
       connectionDFD.resolve();
 
-      connection.on('data', (data) => {
+      socket.on('data', (data) => {
         const json = JSON.parse(data);
-        serverRequestDFD.resolve(json);
+
+        if (json.method === 'introduce') {
+          connection.send({
+            id: json.id,
+            type: 'response',
+            success: true,
+            data: {}
+          });
+        }
+        if (json.method === 'handshake') {
+          serverRequestDFD.resolve(json);
+        }
+
       });
     });
 
