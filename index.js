@@ -21,7 +21,10 @@ const validate = validation([{
   }
 }]);
 
-class IC {
+/**
+ *
+ */
+module.exports = class INCP {
 
   /**
    *
@@ -41,10 +44,6 @@ class IC {
     server.setMessageHandler((socket, message) => this._onInternalMessage(socket, message));
 
     this.server = server;
-
-    setInterval(() => {
-      console.log(`got ${this.nodes.size} nodes`);
-    }, 1000);
   }
 
   /**
@@ -199,5 +198,3 @@ class IC {
     });
   }
 }
-
-module.exports = IC;
