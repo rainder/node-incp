@@ -8,11 +8,20 @@ const net = require('net');
 
 const IC = require('./..');
 const utils = require('./../lib/utils');
+const debug = require('debug');
+
+debug.useColors = () => true;
+debug.log = console.log.bind(console);
 
 chai.should();
 
 describe('e2e', function () {
   this.timeout(2000);
+
+  function *getNumberOfConnections(ics) {
+    yield cb => setTimeout(cb, 500);
+    return yield ics.map(ic => cb => ic.server.getServer().getConnections(cb));
+  }
 
   function *createConnection(port, host, cb) {
     const connection = net.Socket();
@@ -126,7 +135,6 @@ describe('e2e', function () {
     const serverRequestDFD = q.defer();
 
     const connection = yield createConnection(PORT, '127.0.0.1', function (data) {
-      console.log('>>', data);
       responseDFD.resolve(data);
     });
 
@@ -259,6 +267,8 @@ describe('e2e', function () {
     ics[0].getNodesByType('slave').size.should.equals(1);
     ics[1].getNodesByType('master').size.should.equals(1);
     ics[1].getNodesByType('slave').size.should.equals(0);
+
+    (yield getNumberOfConnections(ics)).should.deep.equals([1, 1]);
   });
 
   it('should suggest known nodes', function *() {
@@ -314,6 +324,8 @@ describe('e2e', function () {
         ics[1].getRuntimeId()
       ].sort());
     }
+
+    (yield getNumberOfConnections(ics)).should.deep.equals([2, 2, 2]);
   });
 
   it('should suggest known nodes and broadcast message', function *() {
@@ -381,8 +393,86 @@ describe('e2e', function () {
 
     for (let node of ics[0].getNodes()) {
       const response = yield node.send({ test: 1 });
-      console.log(response);
+      //console.log(response);
     }
+
+    (yield getNumberOfConnections(ics)).should.deep.equals([2, 2, 2]);
+  });
+
+  it('should shutdown an instance', function *() {
+    const ics = [
+      new IC({
+        name: 'node1',
+        type: 'master',
+        host: '127.0.0.1',
+        port: 50030
+      }),
+      new IC({
+        name: 'node2',
+        type: 'master',
+        host: '127.0.0.1',
+        port: 50031
+      })
+    ];
+
+    yield ics.map(ic => ic.startServer());
+
+    yield ics[0].connectTo('127.0.0.1', 50031);
+    yield ics[1].connectTo('127.0.0.1', 50030);
+
+    ics[0].nodes.size.should.equals(1);
+    ics[1].nodes.size.should.equals(1);
+
+    yield ics[1].shutdown();
+
+    ics[0].nodes.size.should.equals(0);
+    ics[1].nodes.size.should.equals(0);
+  });
+
+  it('should shutdown both instance', function *() {
+    const ics = [
+      new IC({
+        name: 'node1',
+        type: 'master',
+        host: '127.0.0.1',
+        port: 50040
+      }),
+      new IC({
+        name: 'node2',
+        type: 'master',
+        host: '127.0.0.1',
+        port: 50041
+      }),
+      new IC({
+        name: 'node2',
+        type: 'master',
+        host: '127.0.0.1',
+        port: 50042
+      })
+    ];
+
+    yield ics.map(ic => ic.startServer());
+
+    yield ics[0].connectTo('127.0.0.1', 50041);
+    yield ics[1].connectTo('127.0.0.1', 50040);
+    yield ics[2].connectTo('127.0.0.1', 50040);
+
+    ics[0].nodes.size.should.equals(2);
+    ics[1].nodes.size.should.equals(2);
+    ics[2].nodes.size.should.equals(2);
+
+    (yield getNumberOfConnections(ics)).should.deep.equals([2, 2, 2]);
+
+    yield [
+      ics[0].shutdown(),
+      ics[1].shutdown()
+    ];
+
+    ics[0].nodes.size.should.equals(0);
+    ics[1].nodes.size.should.equals(0);
+    ics[2].nodes.size.should.equals(0);
+
+    (yield getNumberOfConnections(ics)).should.deep.equals([0, 0, 0]);
   });
 
 });

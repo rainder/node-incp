@@ -184,8 +184,8 @@ module.exports = class INCP {
     return co(function *() {
       const id = `${host}:${port}`;
 
-      if (this.nodes.get('id')) {
-        return this.nodes.get('id');
+      if (this.nodes.get(id)) {
+        return this.nodes.get(id);
       }
 
       const node = new Node(host, port);
@@ -215,9 +215,24 @@ module.exports = class INCP {
    * @returns {Promise}
    */
   shutdown() {
-    return new Promise((resolve, reject) => {
+    return co(function *() {
       this.server.close();
-      resolve();
-    });
+
+      for (let node of this.nodes.values()) {
+        try {
+          yield Request
+            .create('shutdown', { id: this.getId() })
+            .send(node.getSocket());
+        } catch (e) {
+          console.error('INCP shutdown', e.message);
+        }
+
+        node.close();
+        this.nodeById.delete(node.getId());
+        this.nodesByType.getMap(node.getType()).delete(node.getId());
+        this.nodes.delete(node.getId());
+      }
+
+    }.call(this));
   }
 }
