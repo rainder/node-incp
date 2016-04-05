@@ -10,6 +10,7 @@ const Node = require('./lib/node');
 const Request = require('./lib/message/ic-request');
 const DoubleMap = require('./lib/double-map');
 const utils = require('./lib/utils');
+const Loopback = require('./lib/loopback');
 
 const V = validation.V;
 const validate = validation([{
@@ -38,6 +39,7 @@ module.exports = class INCP {
     this.nodes = new Map();
     this.nodesByType = new DoubleMap();
     this.nodeById = new Map();
+    this.loopback = new Loopback(this);
 
     const server = new Server(options.host, options.port);
 
@@ -80,6 +82,10 @@ module.exports = class INCP {
   setMessageHandler(messageHandler) {
     this._onExternalMessage = messageHandler;
     return this;
+  }
+
+  getLoopback() {
+    return this.loopback;
   }
 
   /**
