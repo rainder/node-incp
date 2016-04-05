@@ -52,7 +52,7 @@ module.exports = class INCP {
    * @returns {INCP}
    */
   static create(options) {
-    return new IC(options);
+    return new INCP(options);
   }
 
   /**
@@ -98,6 +98,10 @@ module.exports = class INCP {
     return this.runtimeId;
   }
 
+  /**
+   *
+   * @returns {string}
+   */
   getName() {
     return this.options.name;
   }
