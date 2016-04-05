@@ -116,6 +116,22 @@ module.exports = class INCP {
    *
    * @returns {*}
    */
+  getHost() {
+    return this.options.host;
+  }
+
+  /**
+   *
+   * @returns {*}
+   */
+  getPort() {
+    return this.options.port;
+  }
+
+  /**
+   *
+   * @returns {*}
+   */
   getType() {
     return this.options.type;
   }
