@@ -1,61 +1,158 @@
 'use strict';
 
-const events = require('events');
-const Manager = require('./lib/manager');
-const utils = require('./lib/utils');
-const callbacks = require('./lib/callbacks');
+const co = require('co');
+const objectId = require('objectid');
 
-module.exports = class IC extends events.EventEmitter {
+const Server = require('./lib/server');
+const router = require('./lib/router');
+const validation = require('./lib/validation');
+const Node = require('./lib/node');
+const Request = require('./lib/message/ic-request');
+const DoubleMap = require('./lib/double-map');
+const utils = require('./lib/utils');
+const Loopback = require('./lib/loopback');
+
+const V = validation.V;
+const validate = validation([{
+  $schema: {
+    name: V(String).required(),
+    type: V(String).required(),
+    host: V(String).required(),
+    port: V(Number).required()
+  }
+}]);
+
+/**
+ *
+ */
+module.exports = class INCP {
+
+  /**
+   *
+   * @param options {{host, port, type, name}}
+   */
+  constructor(options) {
+    validate(options);
+
+    this.runtimeId = objectId().toString();
+    this.options = options;
+    this.nodes = new Map();
+    this.nodesByType = new DoubleMap();
+    this.nodeById = new Map();
+    this.loopback = new Loopback(this);
+
+    const server = new Server(options.host, options.port);
+
+    server.setMessageHandler((socket, message) => this._onInternalMessage(socket, message));
+
+    this.server = server;
+  }
+
   /**
    *
    * @param options
+   * @returns {INCP}
    */
-  constructor(options) {
-    super();
+  static create(options) {
+    return new INCP(options);
+  }
 
-    this.options = options;
-    this.manager = new Manager(options);
-    this.nodes = new Set();
+  /**
+   *
+   * @param socket
+   * @param message
+   * @private
+   */
+  _onInternalMessage(socket, message) {
+    router.route(this, socket, message);
+  }
 
-    utils.pipeEvent('established', this.manager, this);
-    utils.pipeEvent('message', this.manager, this);
-    utils.pipeEvent('error', this.manager, this);
+  /**
+   *
+   */
+  _onExternalMessage(message) {
+    console.error('INCP unhandled external message', message);
+  }
+
+  /**
+   *
+   * @param messageHandler {Function*}
+   * @returns {INCP}
+   */
+  setMessageHandler(messageHandler) {
+    this._onExternalMessage = messageHandler;
+    return this;
+  }
+
+  getLoopback() {
+    return this.loopback;
+  }
+
+  /**
+   *
+   * @returns {Promise}
+   */
+  startServer() {
+    return this.server.listen();
   }
 
   /**
    *
    * @returns {*}
    */
-  *startServer() {
-    return yield this.manager.startServer();
+  getRuntimeId() {
+    return this.runtimeId;
+  }
+
+  /**
+   *
+   * @returns {string}
+   */
+  getName() {
+    return this.options.name;
   }
 
   /**
    *
    * @returns {*}
    */
-  *connect(address) {
-    return yield this.manager.connect(address);
+  getType() {
+    return this.options.type;
   }
 
   /**
    *
+   * @returns {*}
    */
-  *ensureConnected() {
-    let prevPromises = [];
+  getId() {
+    return `${this.options.host}:${this.options.port}`;
+  }
 
-    while (true) {
-      let promises = Array.from(this.manager.mapById.values()).map(function (node) {
-        return node.duplexDFD.promise;
-      });
+  /**
+   *
+   * @returns {Map|*}
+   */
+  getNodes() {
+    const result = [];
 
-      if (promises.length === prevPromises.length) {
-        break;
+    for (let node of this.nodes.values()) {
+      if (!node.info.type) {
+        continue;
       }
 
-      yield promises;
-      prevPromises = promises;
+      result.push(node);
     }
+
+    return result;
+  }
+
+  /**
+   *
+   * @param type
+   * @returns {V}
+   */
+  getNodesByType(type) {
+    return this.nodesByType.getMap(type);
   }
 
   /**
@@ -64,63 +161,63 @@ module.exports = class IC extends events.EventEmitter {
    * @returns {*}
    */
   getRandomNodeByType(type) {
-    let collection = this.manager.mapByType.get(type);
-    if (!collection) {
-      return null;
-    }
+    const nodes = this.nodesByType.getMap(type);
+    const keys = Array.from(nodes.keys())
+    const key = keys[Math.floor(Math.random() * keys.length)];
 
-    let index = utils.getRandomInt(0, collection.length - 1);
-    return collection[index];
-  };
+    return nodes.get(key);
+  }
 
   /**
    *
-   * @param id
-   * @returns {*}
    */
   getNodeById(id) {
-    return this.manager.mapById.get(id);
+    return this.nodeById.get(id);
   }
 
   /**
    *
-   * @param id
-   * @param success
-   * @param data
-   * @returns {boolean}
+   * @param host
+   * @param port
    */
-  respond(id, success, data) {
-    return callbacks.execute(id, success, data);
+  connectTo(host, port) {
+    return co(function *() {
+      const id = `${host}:${port}`;
+
+      if (this.nodes.get('id')) {
+        return this.nodes.get('id');
+      }
+
+      const node = new Node(host, port);
+      node.setMessageHandler((socket, message) => this._onInternalMessage(socket, message));
+
+      this.nodes.set(id, node);
+      yield node.connect();
+
+      node.info = yield Request
+        .create('handshake', {
+          host: this.options.host,
+          port: this.options.port
+        })
+        .send(node.getSocket());
+
+      this.nodesByType.add(node.info.type, node.getType(), node);
+      this.nodeById.set(node.getId(), node);
+
+      yield utils.introduce(this, node);
+
+      return node;
+    }.call(this));
   }
 
   /**
    *
-   * @returns {*}
+   * @returns {Promise}
    */
-  getId() {
-    return this.manager.cfg.id;
+  shutdown() {
+    return new Promise((resolve, reject) => {
+      this.server.close();
+      resolve();
+    });
   }
-
-  /**
-   *
-   * @returns {*}
-   */
-  getType() {
-    return this.manager.cfg.type;
-  }
-
-  /**
-   *
-   * @returns {*}
-   */
-  getLoopback() {
-    return this.manager.loopback;
-  }
-
-  /**
-   *
-   */
-  *shutdown() {
-    return yield this.manager.shutdown();
-  }
-};
+}

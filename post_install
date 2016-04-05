@@ -1,6 +1,0 @@
-#!/bin/bash
-
-mkdir node_modules
-cd node_modules
-rm app 2>/dev/null
-ln -s ./../lib app
