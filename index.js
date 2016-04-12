@@ -5,22 +5,19 @@ const objectId = require('objectid');
 
 const Server = require('./lib/server');
 const router = require('./lib/router');
-const validation = require('./lib/validation');
+const V = require('./lib/validation');
 const Node = require('./lib/node');
 const Request = require('./lib/message/ic-request');
 const DoubleMap = require('./lib/double-map');
 const utils = require('./lib/utils');
 const Loopback = require('./lib/loopback');
 
-const V = validation.V;
-const validate = validation([{
-  $schema: {
-    name: V(String).required(),
-    type: V(String).required(),
-    host: V(String).required(),
-    port: V(Number).required()
-  }
-}]);
+const validate = V.Schema({
+  name: V(String).required(),
+  type: V(String).required(),
+  host: V(String).required(),
+  port: V(Number).required()
+});
 
 /**
  *
