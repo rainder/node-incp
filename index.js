@@ -175,7 +175,12 @@ module.exports = class INCP {
    */
   getRandomNodeByType(type) {
     const nodes = this.nodesByType.getMap(type);
-    const keys = Array.from(nodes.keys())
+
+    if (!nodes) {
+      return false;
+    }
+
+    const keys = Array.from(nodes.keys());
     const key = keys[Math.floor(Math.random() * keys.length)];
 
     return nodes.get(key);
@@ -214,7 +219,7 @@ module.exports = class INCP {
         })
         .send(node.getSocket());
 
-      this.nodesByType.add(node.info.type, node.getType(), node);
+      this.nodesByType.add(node.getType(), node.getId(), node);
       this.nodeById.set(node.getId(), node);
 
       yield utils.introduce(this, node);
@@ -242,7 +247,7 @@ module.exports = class INCP {
 
         node.close();
         this.nodeById.delete(node.getId());
-        this.nodesByType.getMap(node.getType()).delete(node.getId());
+        this.nodesByType.delete(node.getType(), node.getId());
         this.nodes.delete(node.getId());
       }
 

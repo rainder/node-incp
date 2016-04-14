@@ -461,6 +461,11 @@ describe('e2e', function () {
 
     (yield getNumberOfConnections(ics)).should.deep.equals([2, 2, 2]);
 
+    for (let i = 0; i < 2; i++) {
+      ics[i].nodesByType.map.size.should.equals(1);
+      ics[i].nodesByType.map.get('master').size.should.equals(2);
+    }
+
     yield [
       ics[0].shutdown(),
       ics[1].shutdown()
