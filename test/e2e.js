@@ -224,9 +224,7 @@ describe('e2e', function () {
 
     Array.from(ics[0].nodes.values())[0].info.type.should.equals('none');
     Array.from(ics[1].nodes.values())[0].info.type.should.equals('none');
-
-    //console.log(ics[0].nodes);
-    //console.log(ics[1].nodes);
+    (!!Array.from(ics[0].nodes.values())[0].getRuntimeId()).should.equals(true);
   });
 
   it('should use public method send()', function *() {
