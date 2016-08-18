@@ -229,4 +229,86 @@ describe('work just fine', function () {
       serverConnections.should.deep.equals([1, 1, 0]);
     }
   });
+
+  it('should ignore different groups1', function *() {
+    const incp1 = new INCP({
+      type: 'one',
+      group: 'house'
+    });
+    const incp2 = new INCP({
+      type: 'two',
+      group: 'car'
+    });
+
+    yield incp1.start();
+    yield incp2.start();
+
+    try {
+      yield incp1.connectTo({
+        host: incp2.server.host,
+        port: incp2.server.port
+      });
+      false.should.equals(true);
+    } catch (e) {
+      e.errno.should.equals(4)
+    }
+
+    yield cb => setTimeout(cb, 100);
+    incp1.nodes.size.should.equals(0);
+    incp2.nodes.size.should.equals(0);
+  });
+
+  it('should ignore different groups2', function *() {
+    const incp1 = new INCP({
+      type: 'one'
+    });
+    const incp2 = new INCP({
+      type: 'two',
+      group: 'car'
+    });
+
+    yield incp1.start();
+    yield incp2.start();
+
+    try {
+      yield incp1.connectTo({
+        host: incp2.server.host,
+        port: incp2.server.port
+      });
+      false.should.equals(true);
+    } catch (e) {
+      e.errno.should.equals(4)
+    }
+
+    yield cb => setTimeout(cb, 100);
+    incp1.nodes.size.should.equals(0);
+    incp2.nodes.size.should.equals(0);
+  });
+
+  it('should ignore different groups3', function *() {
+    const incp1 = new INCP({
+      type: 'one',
+      group: 'car'
+    });
+    const incp2 = new INCP({
+      type: 'two'
+    });
+
+    yield incp1.start();
+    yield incp2.start();
+
+    try {
+      yield incp1.connectTo({
+        host: incp2.server.host,
+        port: incp2.server.port
+      });
+      false.should.equals(true);
+    } catch (e) {
+      e.errno.should.equals(4)
+    }
+
+    yield cb => setTimeout(cb, 100);
+    incp1.nodes.size.should.equals(0);
+    incp2.nodes.size.should.equals(0);
+  });
 });
