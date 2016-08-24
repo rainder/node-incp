@@ -311,4 +311,36 @@ describe('work just fine', function () {
     incp1.nodes.size.should.equals(0);
     incp2.nodes.size.should.equals(0);
   });
+
+  it('should set a flag on a node', function *() {
+    const incp1 = new INCP({
+      type: 'one'
+    });
+    const incp2 = new INCP({
+      type: 'two',
+      flags: {
+        test: 4
+      }
+    });
+
+    yield incp1.start();
+    yield incp2.start();
+
+    yield incp1.connectTo({
+      host: incp2.server.host,
+      port: incp2.server.port
+    });
+
+    yield incp1.flag('state', 'quiting');
+
+    yield cb => setTimeout(cb, 100);
+    incp1.nodes.size.should.equals(1);
+    incp2.nodes.size.should.equals(1);
+
+    incp1.config.flags.state.should.equals('quiting');
+    incp2.nodes.get(incp1.getId()).options.remote.flags.state.should.equals('quiting');
+
+    incp2.config.flags.test.should.equals(4);
+    incp1.nodes.get(incp2.getId()).options.remote.flags.test.should.equals(4);
+  });
 });
