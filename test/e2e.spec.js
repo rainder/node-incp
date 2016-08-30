@@ -300,6 +300,21 @@ describe('work just fine', function () {
     node.should.equals(incp1.getLoopback());
   });
 
+  it('should get node if connecting to already connected node', function *() {
+    const incp1 = new INCP();
+    const incp2 = new INCP();
+
+    yield [
+      cb => incp1.once('ready', cb),
+      cb => incp2.once('ready', cb),
+    ];
+
+    const node1 = yield incp1.connectTo(incp2.config.getOptions().host, incp2.config.getOptions().port);
+    const node2 = yield incp1.connectTo(incp2.config.getOptions().host, incp2.config.getOptions().port);
+
+    node1.should.equals(node2);
+  });
+
 
   // it('should destroy server the connection and work just fine', function *() {
   //   const incp1 = new INCP();
