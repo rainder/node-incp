@@ -9,6 +9,10 @@
   "scripts": {
     "test": "node_modules/.bin/mocha -b --recursive test "
   },
+  "repository": {
+    "type": "git",
+    "url": "git@github.com:rainder/node-incp.git"
+  },
   "author": "Andrius Skerla",
   "license": "ISC",
   "dependencies": {
