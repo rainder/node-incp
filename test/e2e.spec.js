@@ -315,6 +315,32 @@ describe('work just fine', function () {
     node1.should.equals(node2);
   });
 
+  it('should set metadata on the node', function *() {
+    const incp1 = new INCP();
+    const incp2 = new INCP({ metadata: { test: false } });
+    const incp3 = new INCP();
+
+    yield [
+      cb => incp1.once('ready', cb),
+      cb => incp2.once('ready', cb),
+      cb => incp3.once('ready', cb),
+    ];
+
+    yield incp1.connectTo(incp2.config.getOptions().host, incp2.config.getOptions().port);
+    yield incp2.connectTo(incp3.config.getOptions().host, incp3.config.getOptions().port);
+
+    yield cb => setTimeout(cb, 100);
+
+    incp1.getNodes().get(incp2.getId()).getMetadata().test.should.equals(false);
+    incp3.getNodes().get(incp2.getId()).getMetadata().test.should.equals(false);
+
+    yield incp2.setMetadata('test', true);
+    yield cb => setTimeout(cb, 100);
+
+    incp1.getNodes().get(incp2.getId()).getMetadata().test.should.equals(true);
+    incp3.getNodes().get(incp2.getId()).getMetadata().test.should.equals(true);
+  });
+
 
   // it('should destroy server the connection and work just fine', function *() {
   //   const incp1 = new INCP();
