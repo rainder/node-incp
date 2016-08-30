@@ -231,6 +231,76 @@ describe('work just fine', function () {
     }));
   });
 
+  it('should send push message', function *() {
+    const incp1 = new INCP();
+    const incp2 = new INCP();
+
+    yield [
+      cb => incp1.once('ready', cb),
+      cb => incp2.once('ready', cb),
+    ];
+
+    let msgs = 0;
+    incp1.onPush = function *(msg) {
+      msgs += msg.a;
+      return msg.a + 1;
+    };
+
+    yield incp1.connectTo(incp2.config.getOptions().host, incp2.config.getOptions().port);
+
+    const node = incp2.getNodes().get(incp1.getId());
+
+    yield node.push({ a: 5 });
+    yield cb => setTimeout(cb, 100);
+    msgs.should.equals(5);
+  });
+
+  it('should get loopback interface', function *() {
+    const incp1 = new INCP();
+
+    yield [
+      cb => incp1.once('ready', cb)
+    ];
+
+    incp1.onRequest = function *(msg) {
+      return msg.a + 1;
+    };
+
+    const response = yield incp1.getLoopback().request({ a: 5 });
+    response.should.equals(6);
+  });
+
+  it('should sent push through loopback interface', function *() {
+    const incp1 = new INCP();
+
+    yield [
+      cb => incp1.once('ready', cb)
+    ];
+
+    let msgs = 0;
+    incp1.onPush = function *(msg) {
+      msgs += msg.a;
+      return msg.a + 1;
+    };
+
+    yield incp1.getLoopback().push({ a: 5 });
+    yield cb => setTimeout(cb, 100);
+    msgs.should.equals(5);
+  });
+
+  it('should get loopback interface when connecting to itself', function *() {
+    const incp1 = new INCP();
+
+    yield [
+      cb => incp1.once('ready', cb)
+    ];
+
+    const node = yield incp1.connectTo(incp1.config.getOptions().host, incp1.config.getOptions().port);
+
+    node.should.equals(incp1.getLoopback());
+  });
+
+
   // it('should destroy server the connection and work just fine', function *() {
   //   const incp1 = new INCP();
   //   const incp2 = new INCP();
