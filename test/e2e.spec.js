@@ -341,6 +341,170 @@ describe('work just fine', function () {
     incp3.getNodes().get(incp2.getId()).getMetadata().test.should.equals(true);
   });
 
+  it('should ok with two instances', function *() {
+    const incp1 = new INCP();
+    const incp2 = new INCP();
+
+    yield [
+      cb => incp1.once('ready', cb),
+      cb => incp2.once('ready', cb),
+    ];
+
+    const nodes = yield [[
+      incp1.connectTo(incp2.config.getOptions().host, incp2.config.getOptions().port),
+    ], [
+      incp2.connectTo(incp1.config.getOptions().host, incp1.config.getOptions().port)
+    ]];
+
+    yield cb => setTimeout(cb, 100);
+
+    const connections = yield [
+      cb => incp1.getServer()._server.getConnections(cb),
+      cb => incp2.getServer()._server.getConnections(cb),
+    ];
+
+    incp1.getNodes().size.should.equals(1);
+    incp2.getNodes().size.should.equals(1);
+    // incp3.getNodes().size.should.equals(2);
+
+    function map(nodes) {
+      return Array.from(nodes).map(node => {
+        return `${node.getId()} ${node.is_client ? 1 : 0}`
+      });
+    }
+  });
+
+  it('should ok with three instances', function *() {
+    const incp1 = new INCP();
+    const incp2 = new INCP();
+    const incp3 = new INCP();
+
+    yield [
+      cb => incp1.once('ready', cb),
+      cb => incp2.once('ready', cb),
+      cb => incp3.once('ready', cb),
+    ];
+
+    const nodes = yield [[
+      incp1.connectTo(incp2.config.getOptions().host, incp2.config.getOptions().port),
+      incp1.connectTo(incp3.config.getOptions().host, incp3.config.getOptions().port),
+    ], [
+      incp2.connectTo(incp1.config.getOptions().host, incp1.config.getOptions().port),
+      incp2.connectTo(incp3.config.getOptions().host, incp3.config.getOptions().port),
+    ], [
+      incp3.connectTo(incp1.config.getOptions().host, incp1.config.getOptions().port),
+      incp3.connectTo(incp2.config.getOptions().host, incp2.config.getOptions().port),
+    ]];
+
+    yield cb => setTimeout(cb, 100);
+
+    const connections = yield [
+      cb => incp1.getServer()._server.getConnections(cb),
+      cb => incp2.getServer()._server.getConnections(cb),
+      cb => incp3.getServer()._server.getConnections(cb),
+    ];
+
+    incp1.getNodes().size.should.equals(2);
+    incp2.getNodes().size.should.equals(2);
+    incp3.getNodes().size.should.equals(2);
+    // incp3.getNodes().size.should.equals(2);
+
+    function map(nodes) {
+      return Array.from(nodes).map(node => {
+        return `${node.getId()} ${node.is_client ? 1 : 0}`
+      });
+    }
+  });
+
+  it('should ok with four instances', function *() {
+    const incp1 = new INCP();
+    const incp2 = new INCP();
+    const incp3 = new INCP();
+    const incp4 = new INCP();
+
+    yield [
+      cb => incp1.once('ready', cb),
+      cb => incp2.once('ready', cb),
+      cb => incp3.once('ready', cb),
+      cb => incp4.once('ready', cb),
+    ];
+
+    const nodes = yield [[
+      incp1.connectTo(incp2.config.getOptions().host, incp2.config.getOptions().port),
+      incp1.connectTo(incp3.config.getOptions().host, incp3.config.getOptions().port),
+      incp1.connectTo(incp4.config.getOptions().host, incp4.config.getOptions().port),
+    ], [
+      incp2.connectTo(incp1.config.getOptions().host, incp1.config.getOptions().port),
+      incp2.connectTo(incp3.config.getOptions().host, incp3.config.getOptions().port),
+      incp2.connectTo(incp4.config.getOptions().host, incp4.config.getOptions().port),
+    ], [
+      incp3.connectTo(incp1.config.getOptions().host, incp1.config.getOptions().port),
+      incp3.connectTo(incp2.config.getOptions().host, incp2.config.getOptions().port),
+      incp3.connectTo(incp4.config.getOptions().host, incp4.config.getOptions().port),
+    ], [
+      incp4.connectTo(incp1.config.getOptions().host, incp1.config.getOptions().port),
+      incp4.connectTo(incp2.config.getOptions().host, incp2.config.getOptions().port),
+      incp4.connectTo(incp3.config.getOptions().host, incp3.config.getOptions().port),
+    ]];
+
+    yield cb => setTimeout(cb, 100);
+
+    const connections = yield [
+      cb => incp1.getServer()._server.getConnections(cb),
+      cb => incp2.getServer()._server.getConnections(cb),
+      cb => incp3.getServer()._server.getConnections(cb),
+      cb => incp4.getServer()._server.getConnections(cb),
+    ];
+
+    incp1.getNodes().size.should.equals(3);
+    incp2.getNodes().size.should.equals(3);
+    incp3.getNodes().size.should.equals(3);
+    incp4.getNodes().size.should.equals(3);
+    // incp3.getNodes().size.should.equals(2);
+
+    function map(nodes) {
+      return Array.from(nodes).map(node => {
+        return `${node.getId()} ${node.is_client ? 1 : 0}`
+      });
+    }
+  });
+
+  // it('should ok with two instances', function *() {
+  //   const incp1 = new INCP();
+  //   const incp2 = new INCP();
+  //   const incp3 = new INCP();
+  //
+  //   yield [
+  //     cb => incp1.once('ready', cb),
+  //     cb => incp2.once('ready', cb),
+  //     cb => incp3.once('ready', cb),
+  //   ];
+  //
+  //   const nodes = yield [[
+  //     incp1.connectTo(incp1.config.getOptions().host, incp1.config.getOptions().port),
+  //     incp1.connectTo(incp2.config.getOptions().host, incp2.config.getOptions().port),
+  //     incp1.connectTo(incp3.config.getOptions().host, incp3.config.getOptions().port)
+  //   ], [
+  //     incp2.connectTo(incp1.config.getOptions().host, incp1.config.getOptions().port),
+  //     incp2.connectTo(incp2.config.getOptions().host, incp2.config.getOptions().port),
+  //     incp2.connectTo(incp3.config.getOptions().host, incp3.config.getOptions().port)
+  //   ], [
+  //     incp3.connectTo(incp1.config.getOptions().host, incp1.config.getOptions().port),
+  //     incp3.connectTo(incp2.config.getOptions().host, incp2.config.getOptions().port),
+  //     incp3.connectTo(incp3.config.getOptions().host, incp3.config.getOptions().port)
+  //   ]];
+  //
+  //   yield cb => setTimeout(cb, 1000);
+  //
+  //   console.log(incp1.getId(), incp1.getNodes().keys());
+  //   console.log(incp2.getId(), incp2.getNodes().keys());
+  //   console.log(incp3.getId(), incp3.getNodes().keys());
+  //
+  //   // incp1.getNodes().size.should.equals(2);
+  //   // incp2.getNodes().size.should.equals(2);
+  //   // incp3.getNodes().size.should.equals(2);
+  // });
+
 
   // it('should destroy server the connection and work just fine', function *() {
   //   const incp1 = new INCP();
