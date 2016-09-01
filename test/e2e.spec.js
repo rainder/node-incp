@@ -22,8 +22,8 @@ describe('work just fine', function () {
     yield incp1.connectTo(incp2.config.getOptions().host, incp2.config.getOptions().port);
 
     (yield [
-      cb => incp1.getServer()._server.getConnections(cb),
-      cb => incp2.getServer()._server.getConnections(cb)
+      cb => incp1.getServer().getConnections(cb),
+      cb => incp2.getServer().getConnections(cb)
     ]).should.deep.equals([0, 1]);
   });
 
@@ -44,8 +44,8 @@ describe('work just fine', function () {
     yield cb => setTimeout(cb, 100);
 
     (yield [
-      cb => incp1.getServer()._server.getConnections(cb),
-      cb => incp2.getServer()._server.getConnections(cb)
+      cb => incp1.getServer().getConnections(cb),
+      cb => incp2.getServer().getConnections(cb)
     ]).should.deep.equals([0, 1]);
   });
 
@@ -61,8 +61,8 @@ describe('work just fine', function () {
     yield incp1.connectTo(incp2.config.getOptions().host, incp2.config.getOptions().port);
 
     (yield [
-      cb => incp1.getServer()._server.getConnections(cb),
-      cb => incp2.getServer()._server.getConnections(cb)
+      cb => incp1.getServer().getConnections(cb),
+      cb => incp2.getServer().getConnections(cb)
     ]).should.deep.equals([0, 1]);
 
     try {
@@ -78,8 +78,8 @@ describe('work just fine', function () {
     // console.log(incp2.getNodes());
 
     (yield [
-      cb => incp1.getServer()._server.getConnections(cb),
-      cb => incp2.getServer()._server.getConnections(cb)
+      cb => incp1.getServer().getConnections(cb),
+      cb => incp2.getServer().getConnections(cb)
     ]).should.deep.equals([0, 1]);
 
   });
@@ -104,8 +104,8 @@ describe('work just fine', function () {
     // console.log(incp2.getNodes());
 
     (yield [
-      cb => incp1.getServer()._server.getConnections(cb),
-      cb => incp2.getServer()._server.getConnections(cb)
+      cb => incp1.getServer().getConnections(cb),
+      cb => incp2.getServer().getConnections(cb)
     ]).should.deep.equals([0, 1]);
   });
 
@@ -127,8 +127,8 @@ describe('work just fine', function () {
     yield cb => setTimeout(cb, 100);
 
     (yield [
-      cb => incp1.getServer()._server.getConnections(cb),
-      cb => incp2.getServer()._server.getConnections(cb)
+      cb => incp1.getServer().getConnections(cb),
+      cb => incp2.getServer().getConnections(cb)
     ]).should.deep.equals([0, 0]);
   });
 
@@ -359,8 +359,8 @@ describe('work just fine', function () {
     yield cb => setTimeout(cb, 100);
 
     const connections = yield [
-      cb => incp1.getServer()._server.getConnections(cb),
-      cb => incp2.getServer()._server.getConnections(cb),
+      cb => incp1.getServer().getConnections(cb),
+      cb => incp2.getServer().getConnections(cb),
     ];
 
     incp1.getNodes().size.should.equals(1);
@@ -399,9 +399,9 @@ describe('work just fine', function () {
     yield cb => setTimeout(cb, 100);
 
     const connections = yield [
-      cb => incp1.getServer()._server.getConnections(cb),
-      cb => incp2.getServer()._server.getConnections(cb),
-      cb => incp3.getServer()._server.getConnections(cb),
+      cb => incp1.getServer().getConnections(cb),
+      cb => incp2.getServer().getConnections(cb),
+      cb => incp3.getServer().getConnections(cb),
     ];
 
     incp1.getNodes().size.should.equals(2);
@@ -450,10 +450,10 @@ describe('work just fine', function () {
     yield cb => setTimeout(cb, 100);
 
     const connections = yield [
-      cb => incp1.getServer()._server.getConnections(cb),
-      cb => incp2.getServer()._server.getConnections(cb),
-      cb => incp3.getServer()._server.getConnections(cb),
-      cb => incp4.getServer()._server.getConnections(cb),
+      cb => incp1.getServer().getConnections(cb),
+      cb => incp2.getServer().getConnections(cb),
+      cb => incp3.getServer().getConnections(cb),
+      cb => incp4.getServer().getConnections(cb),
     ];
 
     incp1.getNodes().size.should.equals(3);
