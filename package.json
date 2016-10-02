@@ -19,7 +19,7 @@
     "@rainder/defer": "^0.2.0",
     "@rainder/request-response-wrapper": "^0.2.0",
     "co": "^4.6.0",
-    "co-try-catch": "^0.1.2"
+    "co-try-catch": "^0.3.0"
   },
   "devDependencies": {
     "chai": "^3.5.0",
