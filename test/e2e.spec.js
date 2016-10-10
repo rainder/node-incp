@@ -1,7 +1,7 @@
 'use strict';
 
 require('co-mocha');
-const tryCatch = require('co-try-catch');
+const { tryCatch } = require('co-try-catch');
 const chai = require('chai');
 const INCP = require('./../lib/incp');
 const INCPError = require('./../lib/incp-error');
