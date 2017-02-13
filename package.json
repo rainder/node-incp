@@ -18,7 +18,7 @@
   "license": "ISC",
   "dependencies": {
     "@rainder/defer": "^0.2.0",
-    "@rainder/request-response-wrapper": "^0.2.0",
+    "@rainder/request-response-wrapper": "^0.2.2",
     "co": "^4.6.0",
     "co-try-catch": "^0.5.0"
   },
