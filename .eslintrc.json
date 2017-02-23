@@ -15,7 +15,7 @@
     "valid-typeof": 2,
     "use-isnan": 2,
     "accessor-pairs": 1,
-    "array-callback-return": 1,
+    "array-callback-return": 0,
     "class-methods-use-this": 0,
     "complexity": [
       1,
@@ -30,7 +30,7 @@
     "guard-for-in": 1,
     "no-case-declarations": 2,
     "no-else-return": 1,
-    "no-empty-function": 1,
+    "no-empty-function": 0,
     "no-empty-pattern": 1,
     "no-eval": 2,
     "no-extend-native": 2,
@@ -178,7 +178,7 @@
     "prefer-rest-params": 1,
     "prefer-spread": 1,
     "prefer-template": 1,
-    "require-yield": 1,
+    "require-yield": 0,
     "rest-spread-spacing": [2, "never"],
     "template-curly-spacing": [1, "never"],
     "yield-star-spacing": [1, "before"]
