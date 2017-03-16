@@ -21,7 +21,6 @@
     "@rainder/readdir-deep": "^0.1.0",
     "@rainder/request-response-wrapper": "^0.2.2",
     "bson": "^1.0.4",
-    "co": "^4.6.0",
     "debug": "^2.6.1",
     "lodash": "^4.17.4",
     "microtime": "^2.1.2"
