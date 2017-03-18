@@ -1,6 +1,8 @@
 'use strict';
 
 const net = require('net');
+const fs = require('fs');
+const path = require('path');
 const INCP = require('./..');
 require('chai').should();
 
@@ -205,5 +207,53 @@ describe('connection', function () {
     r.should.equals(5);
   });
 
+  it('should handle TLS connection propertly', async function () {
+    this.timeout(10000);
+
+    const tls = {
+      // Private key of the server
+      key: fs.readFileSync(path.join(__dirname, './mock/server-key.pem')),
+      // Public key of the server (certificate key)
+      cert: fs.readFileSync(path.join(__dirname, './mock/server-crt.pem')),
+      ca: [
+        fs.readFileSync(path.join(__dirname, './mock/ca-crt.pem')),
+      ],
+      requestCert: true,
+      rejectUnauthorized: true,
+    };
+    const incp1 = new INCP({ id: 2, tls });
+    const incp2 = new INCP({ id: 1, tls });
+    const incp3 = new INCP({ id: 3, tls });
+    await Promise.all([
+      incp1.startServer(),
+      incp2.startServer(),
+      incp3.startServer(),
+    ]);
+
+    incp1.onRequest = async({ a }) => a + 5;
+    incp2.onRequest = async({ a }) => a + 5;
+    incp3.onRequest = async({ a }) => a + 5;
+
+    await incp1.connectTo(incp2.getConfiguration().getPort());
+    await incp3.connectTo(incp2.getConfiguration().getPort());
+
+    await new Promise((cb) => setTimeout(cb, 300));
+
+    await Promise.all(Array.from(incp1.getNodes().values()).map(async(node) => {
+      return node.request({ a: 5 }).then((r) => r.should.equals(10));
+    }));
+
+    await Promise.all(Array.from(incp2.getNodes().values()).map(async(node) => {
+      return node.request({ a: 5 }).then((r) => r.should.equals(10));
+    }));
+
+    await Promise.all(Array.from(incp3.getNodes().values()).map(async(node) => {
+      return node.request({ a: 5 }).then((r) => r.should.equals(10));
+    }));
+
+    incp1.getNodes().size.should.equals(2);
+    incp2.getNodes().size.should.equals(2);
+    incp3.getNodes().size.should.equals(2);
+  });
 
 });
